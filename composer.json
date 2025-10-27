@@ -1,0 +1,36 @@
+{
+    "name": "valksor/php-sse",
+    "license": "BSD-3-Clause",
+    "type": "library",
+    "require": {
+        "php": ">=8.4",
+        "ext-json": "*",
+        "psr/link": "*",
+        "symfony/asset": "*",
+        "symfony/asset-mapper": "*",
+        "symfony/config": "*",
+        "symfony/console": "*",
+        "symfony/dependency-injection": "*",
+        "symfony/http-client-contracts": "*",
+        "symfony/http-foundation": "*",
+        "symfony/web-link": "*",
+        "twig/twig": "*",
+        "valksor/php-bundle": "*",
+        "valksor/php-functions-local": "^1.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": false,
+    "autoload": {
+        "psr-4": {
+            "Valksor\\Component\\Sse\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    }
+}
