@@ -1,5 +1,10 @@
 # Valksor Component: SSE
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/valksor/php-sse.svg)](https://packagist.org/packages/valksor/php-sse)
+[![Total Downloads](https://img.shields.io/packagist/dt/valksor/php-sse.svg)](https://packagist.org/packages/valksor/php-sse)
+[![License](https://img.shields.io/packagist/l/valksor/php-sse.svg)](LICENSE)
+[![PHP Version Require](https://img.shields.io/packagist/require-v/valksor/php-sse/php)](https://packagist.org/packages/valksor/php-sse)
+
 A Server-Sent Events (SSE) component that provides real-time, unidirectional communication from server to client, enabling live updates, programmatic reloads, and dynamic content streaming in Symfony applications.
 
 ## Features
@@ -384,6 +389,36 @@ valksor:
     sse:
         debug: true
 ```
+
+
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+
+- Code style requirements (PSR-12)
+- Testing requirements for PRs
+- One feature per pull request
+- Development setup instructions
+
+To contribute to SSE component:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/sse-enhancement`)
+3. Implement your SSE enhancement following existing patterns
+4. Add comprehensive tests for new functionality
+5. Ensure all tests pass and code style is correct
+6. Submit a pull request
+
+### Adding New SSE Features
+
+When adding new SSE functionality:
+
+1. Extend existing service classes or create new services
+2. Implement proper event handling and broadcasting
+3. Add Twig functions for frontend integration
+4. Update configuration schema if needed
+5. Add comprehensive tests
+6. Update documentation with examples
 
 ## License
 
