@@ -1,7 +1,20 @@
 {
     "name": "valksor/php-sse",
+    "description": "Server-Sent Events implementation for real-time communication with process management and Symfony integration",
     "license": "BSD-3-Clause",
     "type": "library",
+    "keywords": [
+        "php",
+        "sse",
+        "server-sent-events",
+        "real-time",
+        "communication",
+        "streaming",
+        "symfony",
+        "valksor",
+        "events"
+    ],
+    "homepage": "https://github.com/valksor/php-valksor",
     "require": {
         "php": ">=8.4",
         "ext-json": "*",
