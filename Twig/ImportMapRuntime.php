@@ -74,14 +74,8 @@ final class ImportMapRuntime
 
     public function ping(): bool
     {
-        $port = '';
-
-        if (!in_array($this->requestStack->getMainRequest()?->getPort(), [80, 443], true)) {
-            $port = ':' . $this->requestStack->getMainRequest()?->getPort();
-        }
-
         try {
-            $this->client->request('GET', 'https://' . $this->bag->get('valksor.sse.domain') . $port . $this->bag->get('valksor.sse.path'), [
+            $this->client->request(Request::METHOD_HEAD, $this->getUrl(), [
                 'verify_peer' => false,
                 'verify_host' => false,
             ]);
@@ -296,5 +290,31 @@ final class ImportMapRuntime
         $value = htmlspecialchars($value, $flags, $this->charset);
 
         return (ENT_NOQUOTES & $flags) ? addslashes($value) : $value;
+    }
+
+    private function getPort(): string
+    {
+        static $_port = null;
+
+        if (null === $_port) {
+            $requestPort = $this->requestStack->getMainRequest()?->getPort();
+            $_port = (!in_array($requestPort, [80, 443], true)) ? ':' . $requestPort : '';
+        }
+
+        return $_port;
+    }
+
+    private function getUrl(): string
+    {
+        static $_url = null;
+
+        if (null === $_url) {
+            $_url = 'https://' .
+                $this->bag->get('valksor.sse.domain') .
+                $this->getPort() .
+                $this->bag->get('valksor.sse.path');
+        }
+
+        return $_url;
     }
 }

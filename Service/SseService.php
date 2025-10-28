@@ -28,6 +28,7 @@ use function fgets;
 use function file_get_contents;
 use function function_exists;
 use function fwrite;
+use function in_array;
 use function is_array;
 use function is_file;
 use function json_encode;
@@ -84,18 +85,18 @@ final class SseService extends AbstractService
         $sslCert = $this->bag->get('valksor.sse.ssl_cert_path');
         $sslKey = $this->bag->get('valksor.sse.ssl_key_path');
 
-        $this->io->note('Starting SSE server');
+        $this->io->note('[sse] tarting SSE server');
 
         [$server, $usingTls] = $this->createServer($bindAddress, $port, $domain, $sslCert, $sslKey);
 
         if (!$server) {
-            $this->io->error('Unable to create socket server.');
+            $this->io->error('[sse] nable to create socket server.');
 
             return Command::FAILURE;
         }
 
         $protocol = $usingTls ? 'https' : 'http';
-        $this->io->success(sprintf('Listening on %s://%s:%d%s', $protocol, $bindAddress, $port, $basePath));
+        $this->io->success(sprintf('[sse] listening on %s://%s:%d%s', $protocol, $bindAddress, $port, $basePath));
 
         $this->running = true;
         $this->shouldReload = false;
@@ -145,14 +146,14 @@ final class SseService extends AbstractService
 
             if ($this->shouldReload) {
                 $this->io->newLine();
-                $this->io->section('Force reloading all clients...');
+                $this->io->section('[sse] force reloading all clients...');
                 $this->shouldReload = false;
 
                 try {
                     $this->broadcast('reload', ['files' => ['*']]);
-                    $this->io->success('Force reload broadcast sent.');
+                    $this->io->success('[sse] force reload broadcast sent.');
                 } catch (JsonException $e) {
-                    $this->io->error('Failed to broadcast reload: ' . $e->getMessage());
+                    $this->io->error('[sse] failed to broadcast reload: ' . $e->getMessage());
                 }
             }
         }
@@ -180,11 +181,11 @@ final class SseService extends AbstractService
             $this->broadcast('reload', $payload);
 
             if (isset($this->io)) {
-                $this->io->success('Reload triggered via service call with ' . count($files) . ' files');
+                $this->io->success('[sse] reload triggered via service call with ' . count($files) . ' files');
             }
         } catch (JsonException $e) {
             if (isset($this->io)) {
-                $this->io->error('Failed to trigger reload: ' . $e->getMessage());
+                $this->io->error('[sse] failed to trigger reload: ' . $e->getMessage());
             }
         }
     }
@@ -253,8 +254,8 @@ final class SseService extends AbstractService
             return;
         }
 
-        if (Request::METHOD_GET !== $method) {
-            $this->sendResponse($client, Response::HTTP_METHOD_NOT_ALLOWED, ['Allow: GET, OPTIONS']);
+        if (!in_array($method, [Request::METHOD_GET, Request::METHOD_HEAD], true)) {
+            $this->sendResponse($client, Response::HTTP_METHOD_NOT_ALLOWED, ['Allow: GET, OPTIONS, HEAD']);
             fclose($client);
 
             return;
@@ -370,7 +371,7 @@ final class SseService extends AbstractService
             if ($server) {
                 $usingTls = true;
             } else {
-                $this->io->warning(sprintf('TLS setup failed (%s). Falling back to HTTP.', $errstr));
+                $this->io->warning(sprintf('[sse] TLS setup failed (%s). Falling back to HTTP.', $errstr));
             }
         }
 
@@ -383,7 +384,7 @@ final class SseService extends AbstractService
             );
 
             if (!$server) {
-                $this->io->error(sprintf('Failed to bind socket: [%d] %s', $errno, $errstr));
+                $this->io->error(sprintf('[sse] failed to bind socket: [%d] %s', $errno, $errstr));
 
                 return [null, false];
             }

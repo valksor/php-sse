@@ -15,7 +15,7 @@ namespace Valksor\Component\Sse\Service;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Valksor\Bundle\ValksorBundle;
-use Valksor\Functions\Local\Traits\_MkDir;
+use Valksor\Component\Sse\Helper;
 
 use function array_filter;
 use function array_map;
@@ -37,6 +37,8 @@ use const SIGTERM;
 
 abstract class AbstractService implements ServiceInterface
 {
+    use Helper;
+
     public SymfonyStyle $io;
     protected string $projectDir;
     protected bool $running = false;
@@ -58,20 +60,6 @@ abstract class AbstractService implements ServiceInterface
         $this->ensureDirectory($path);
 
         return $path . 'valksor-' . $serviceName . '.pid';
-    }
-
-    public function ensureDirectory(
-        string $directory,
-    ): void {
-        static $_helper = null;
-
-        if (null === $_helper) {
-            $_helper = new class {
-                use _MkDir;
-            };
-        }
-
-        $_helper->mkdir($directory);
     }
 
     public function getIo(): SymfonyStyle

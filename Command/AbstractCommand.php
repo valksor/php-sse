@@ -21,11 +21,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Valksor\Bundle\ValksorBundle;
+use Valksor\Component\Sse\Helper;
 
 use function sprintf;
 
 abstract class AbstractCommand extends Command
 {
+    use Helper;
+
     protected string $projectDir;
 
     public function __construct(
