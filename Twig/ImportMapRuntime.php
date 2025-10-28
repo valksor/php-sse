@@ -13,6 +13,7 @@
 namespace Valksor\Component\Sse\Twig;
 
 use InvalidArgumentException;
+use JsonException;
 use Psr\Link\EvolvableLinkProviderInterface;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\AssetMapper\ImportMap\ImportMapGenerator;
@@ -91,6 +92,9 @@ final class ImportMapRuntime
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     public function renderDefinition(
         string|array $entryPoint,
         array $attributes = [],
@@ -268,7 +272,7 @@ final class ImportMapRuntime
         $attributes += $this->scriptAttributes;
 
         if (isset($attributes['src']) || isset($attributes['type'])) {
-            throw new InvalidArgumentException(sprintf('The "src" and "type" attributes are not allowed on the <script> tag rendered by "%s".', self::class));
+            throw new InvalidArgumentException(sprintf("The 'src' and 'type' attributes are not allowed on the <script> tag rendered by '%s'.", self::class));
         }
 
         foreach ($attributes as $name => $value) {

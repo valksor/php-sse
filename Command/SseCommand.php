@@ -12,13 +12,14 @@
 
 namespace Valksor\Component\Sse\Command;
 
+use JsonException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Valksor\Component\Sse\Service\SseService;
 
-#[AsCommand(name: 'valksor:sse', description: 'Run the SSE server for programmatic reloads.')]
+#[AsCommand(name: 'valksor:sse')]
 final class SseCommand extends AbstractCommand
 {
     public function __construct(
@@ -28,28 +29,26 @@ final class SseCommand extends AbstractCommand
         parent::__construct($bag);
     }
 
+    /**
+     * @throws JsonException
+     */
     protected function execute(
         InputInterface $input,
         OutputInterface $output,
     ): int {
         $io = $this->createSymfonyStyle($input, $output);
 
-        $this->killConflictingSseProcesses($io);
+        $this->sseService->killConflictingSseProcesses($io);
 
         $this->setServiceIo($this->sseService, $io);
 
-        $pidFile = $this->createPidFilePath('sse');
-        $this->sseService->writePidFile($pidFile);
+        $this->sseService->createPidFilePath($this->sseService::getServiceName());
+        $this->sseService->writePidFile();
 
         $exitCode = $this->sseService->start();
 
-        $this->sseService->removePidFile($pidFile);
+        $this->sseService->removePidFile();
 
         return $exitCode;
-    }
-
-    protected function getSseProcessesToKill(): array
-    {
-        return ['sse'];
     }
 }

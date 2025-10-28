@@ -46,6 +46,14 @@ class SseConfiguration extends AbstractDependencyConfiguration
                         ->info('Domain for TLS certificate lookup')
                         ->defaultValue('localhost')
                     ->end()
+                    ->scalarNode('ssl_cert_path')
+                        ->info('SSL Cert path for TLS. If null, uses /etc/ssl/private/<domain>.crt')
+                        ->defaultNull()
+                    ->end()
+                    ->scalarNode('ssl_key_path')
+                        ->info('SSL Key for TLS. If null, uses /etc/ssl/private/<domain>.key')
+                        ->defaultNull()
+                    ->end()
             ->end();
     }
 }

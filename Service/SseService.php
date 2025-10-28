@@ -14,9 +14,9 @@ namespace Valksor\Component\Sse\Service;
 
 use JsonException;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Valksor\Functions\Iteration\Traits\_JsonDecode;
 
 use function array_key_exists;
 use function array_merge;
@@ -26,13 +26,10 @@ use function fclose;
 use function feof;
 use function fgets;
 use function file_get_contents;
-use function file_put_contents;
 use function function_exists;
 use function fwrite;
-use function getmypid;
 use function is_array;
 use function is_file;
-use function json_decode;
 use function json_encode;
 use function microtime;
 use function parse_url;
@@ -50,6 +47,7 @@ use function strtok;
 use function trim;
 use function unlink;
 
+use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 use const SIGHUP;
@@ -72,33 +70,10 @@ final class SseService extends AbstractService
     /** @var array<int,resource> */
     private array $clients = [];
     private float $nextKeepAliveAt = 0.0;
-    private bool $running = false;
-    private bool $shouldReload = false;
-    private bool $shouldShutdown = false;
 
-    public function __construct(
-        private readonly ParameterBagInterface $bag,
-    ) {
-    }
-
-    public function isRunning(): bool
-    {
-        return $this->running;
-    }
-
-    public function reload(): void
-    {
-        $this->shouldReload = true;
-    }
-
-    public function removePidFile(
-        string $pidFile,
-    ): void {
-        if (is_file($pidFile)) {
-            @unlink($pidFile);
-        }
-    }
-
+    /**
+     * @throws JsonException
+     */
     public function start(
         array $config = [],
     ): int {
@@ -106,10 +81,12 @@ final class SseService extends AbstractService
         $port = $this->bag->get('valksor.sse.port');
         $basePath = $this->bag->get('valksor.sse.path');
         $domain = $this->bag->get('valksor.sse.domain');
+        $sslCert = $this->bag->get('valksor.sse.ssl_cert_path');
+        $sslKey = $this->bag->get('valksor.sse.ssl_key_path');
 
         $this->io->note('Starting SSE server');
 
-        [$server, $usingTls] = $this->createServer($bindAddress, $port, $domain);
+        [$server, $usingTls] = $this->createServer($bindAddress, $port, $domain, $sslCert, $sslKey);
 
         if (!$server) {
             $this->io->error('Unable to create socket server.');
@@ -188,12 +165,6 @@ final class SseService extends AbstractService
         return Command::SUCCESS;
     }
 
-    public function stop(): void
-    {
-        $this->shouldShutdown = true;
-        $this->running = false;
-    }
-
     /**
      * Trigger a reload broadcast to all connected clients.
      *
@@ -218,11 +189,14 @@ final class SseService extends AbstractService
         }
     }
 
-    public function writePidFile(
-        string $pidFile,
-    ): void {
-        $pid = getmypid();
-        file_put_contents($pidFile, (string) $pid);
+    public static function getServiceName(): string
+    {
+        return 'sse';
+    }
+
+    protected function getSseProcessesToKill(): array
+    {
+        return [self::getServiceName()];
     }
 
     private function acceptClient(
@@ -287,7 +261,7 @@ final class SseService extends AbstractService
         }
 
         if ($path === $basePath) {
-            $this->upgradeToSse($client, $path);
+            $this->upgradeToSse($client);
 
             return;
         }
@@ -336,7 +310,15 @@ final class SseService extends AbstractService
             return;
         }
 
-        $data = json_decode($signalData, true);
+        static $_helper = null;
+
+        if (null === $_helper) {
+            $_helper = new class {
+                use _JsonDecode;
+            };
+        }
+
+        $data = $_helper->jsonDecode($signalData, 1);
 
         if (null === $data) {
             return;
@@ -355,19 +337,23 @@ final class SseService extends AbstractService
         string $bindAddress,
         int $port,
         string $domain,
+        ?string $sslCertPath = null,
+        ?string $sslKeyPath = null,
     ): array {
-        $certDir = '/etc/ssl/private';
-        $certPath = $certDir . '/' . $domain . '.crt';
-        $keyPath = $certDir . '/' . $domain . '.key';
+        if (null === $sslCertPath || null === $sslKeyPath) {
+            $certDir = '/etc/ssl/private';
+            $sslCertPath = $certDir . DIRECTORY_SEPARATOR . $domain . '.crt';
+            $sslKeyPath = $certDir . DIRECTORY_SEPARATOR . $domain . '.key';
+        }
 
         $server = null;
         $usingTls = false;
 
-        if (is_file($certPath) && is_file($keyPath)) {
+        if (is_file($sslCertPath) && is_file($sslKeyPath)) {
             $context = stream_context_create([
                 'ssl' => [
-                    'local_cert' => $certPath,
-                    'local_pk' => $keyPath,
+                    'local_cert' => $sslCertPath,
+                    'local_pk' => $sslKeyPath,
                     'allow_self_signed' => true,
                     'verify_peer' => false,
                 ],
@@ -420,7 +406,7 @@ final class SseService extends AbstractService
         string $line,
     ): array {
         $parts = preg_split('/\s+/', trim($line));
-        $method = $parts[0] ?? 'GET';
+        $method = $parts[0] ?? Request::METHOD_GET;
         $target = $parts[1] ?? '/';
 
         $path = $target;
@@ -473,10 +459,10 @@ final class SseService extends AbstractService
         string $body = '',
     ): void {
         $statusText = match ($statusCode) {
-            204 => 'No Content',
-            404 => 'Not Found',
-            405 => 'Method Not Allowed',
-            default => 'OK',
+            Response::HTTP_NO_CONTENT => Response::$statusTexts[Response::HTTP_NO_CONTENT],
+            Response::HTTP_NOT_FOUND => Response::$statusTexts[Response::HTTP_NOT_FOUND],
+            Response::HTTP_METHOD_NOT_ALLOWED => Response::$statusTexts[Response::HTTP_METHOD_NOT_ALLOWED],
+            default => Response::$statusTexts[Response::HTTP_OK],
         };
 
         $response = sprintf("HTTP/1.1 %d %s\r\n", $statusCode, $statusText);
@@ -492,7 +478,6 @@ final class SseService extends AbstractService
 
     private function upgradeToSse(
         $client,
-        string $path,
     ): void {
         $headers = [
             'Content-Type: text/event-stream',
@@ -504,7 +489,7 @@ final class SseService extends AbstractService
             'X-Accel-Buffering: no',
         ];
 
-        $this->sendResponse($client, 200, $headers, "\n");
+        $this->sendResponse($client, Response::HTTP_OK, $headers, "\n");
 
         $id = (int) $client;
         $this->clients[$id] = $client;

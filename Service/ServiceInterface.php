@@ -22,8 +22,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 interface ServiceInterface
 {
-    public SymfonyStyle $io { get; set; }
-
     /**
      * Check if the service is currently running.
      */
@@ -39,12 +37,9 @@ interface ServiceInterface
      */
     public function reload(): void;
 
-    /**
-     * Remove PID file on shutdown.
-     */
-    public function removePidFile(
-        string $pidFile,
-    ): void;
+    public function setIo(
+        SymfonyStyle $io,
+    ): static;
 
     /**
      * Start the service with the given configuration.
@@ -66,11 +61,4 @@ interface ServiceInterface
      * This is typically called in response to SIGINT or SIGTERM signals.
      */
     public function stop(): void;
-
-    /**
-     * Write PID file for signal-based control.
-     */
-    public function writePidFile(
-        string $pidFile,
-    ): void;
 }
