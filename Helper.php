@@ -29,7 +29,7 @@ trait Helper
             };
         }
 
-        $_helper->ensureDirectory($directory);
+        $_helper->mkdir($directory);
     }
 
     public function jsonDecode(
