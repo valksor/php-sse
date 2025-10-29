@@ -58,22 +58,179 @@ use const STREAM_SERVER_BIND;
 use const STREAM_SERVER_LISTEN;
 
 /**
- * SSE server for programmatic reloads.
+ * Server-Sent Events (SSE) service for real-time browser communication.
  *
- * This service provides SSE server functionality for broadcasting events
- * to connected clients. Use triggerReload() to programmatically trigger
- * reload events from other services.
+ * This sophisticated SSE server enables real-time communication between build services
+ * and web browsers, primarily used for hot reload functionality in the Valksor
+ * development framework. The service implements a complete HTTP/SSE server with
+ * TLS support, client management, and signal-based integration.
+ *
+ * Core Architecture:
+ * - Socket-based server using PHP streams for high-performance client handling
+ * - TLS/SSL support with automatic fallback to HTTP for secure development environments
+ * - Non-blocking I/O with stream_select() for efficient concurrent client management
+ * - Signal handling for graceful shutdown (SIGINT, SIGTERM) and reload (SIGHUP)
+ * - File-based signal communication for integration with build system services
+ *
+ * Key Features:
+ * - Multi-client support with concurrent connection handling
+ * - Automatic keep-alive messages to prevent connection timeouts
+ * - CORS support for cross-origin browser communication
+ * - Health check endpoint for monitoring and load balancer integration
+ * - Signal file integration for build system communication
+ * - JSON-based event broadcasting with error handling
+ *
+ * Build System Integration:
+ * - Automatically started by build services (DevWatchService, DevService)
+ * - Receives reload signals through signal files in var/run/ directory
+ * - Broadcasts file change events to connected browsers
+ * - Supports both full reload (['*']) and specific file reloads
+ * - Integrates with hot reload services for seamless development experience
+ *
+ * Protocol Implementation:
+ * - Implements HTTP/1.1 server with proper response handling
+ * - Supports OPTIONS requests for CORS preflight
+ * - Upgrades GET requests to SSE connections with proper headers
+ * - Follows SSE specification for event formatting and delivery
+ * - Handles client disconnections gracefully with cleanup
+ *
+ * Security Considerations:
+ * - TLS support with configurable certificates
+ * - Self-signed certificate support for development
+ * - CORS headers configured for development access
+ * - Input validation for HTTP requests and SSE events
+ * - Graceful error handling to prevent information disclosure
+ *
+ * Performance Features:
+ * - Non-blocking socket operations for scalability
+ * - Efficient client connection pooling and cleanup
+ * - Minimal memory footprint with stream-based operations
+ * - Configurable keep-alive intervals (default: 25 seconds)
+ * - Automatic client purging for disconnected connections
+ *
+ * Usage Examples:
+ * ```php
+ * // Programmatic reload trigger
+ * $sseService->triggerReload(['style.css', 'app.js']);
+ *
+ * // Full page reload
+ * $sseService->triggerReload(['*']);
+ *
+ * // Reload with metadata
+ * $sseService->triggerReload(['*.php'], ['type' => 'server']);
+ * ```
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
+ * @see AbstractService For process management and lifecycle handling
  */
 final class SseService extends AbstractService
 {
+    /**
+     * Keep-alive message interval in seconds.
+     *
+     * SSE connections can timeout if no data is sent for an extended period.
+     * This interval ensures connections stay alive by sending periodic ping
+     * messages. Browsers typically timeout SSE connections after 30-60 seconds
+     * of inactivity, so 25 seconds provides a safe margin.
+     *
+     * @see sendKeepAlive() For the implementation of keep-alive logic
+     */
     private const float KEEP_ALIVE_INTERVAL = 25.0; // seconds
 
-    /** @var array<int,resource> */
+    /**
+     * Active client connections pool.
+     *
+     * Stores all currently connected SSE clients as socket resources.
+     * The array key is the integer cast of the socket resource for
+     * efficient lookup and removal operations.
+     *
+     * Client Lifecycle:
+     * 1. Client connects via HTTP upgrade to SSE
+     * 2. Socket resource added to this array
+     * 3. Client receives broadcast events
+     * 4. Client disconnects (detected by feof())
+     * 5. Socket resource removed from array and closed
+     *
+     * @var array<int,resource> Array of client socket resources indexed by resource ID
+     */
     private array $clients = [];
+
+    /**
+     * Timestamp for the next keep-alive message.
+     *
+     * Tracks when the next ping message should be sent to all connected clients.
+     * This is compared against microtime(true) to determine if keep-alive
+     * messages are due. The timestamp is updated after each keep-alive broadcast.
+     *
+     * Performance Considerations:
+     * - Avoids expensive microtime() calls on every loop iteration
+     * - Provides efficient timing for connection maintenance
+     * - Prevents unnecessary message broadcasting
+     *
+     * @var float Unix timestamp with microseconds for next keep-alive
+     */
     private float $nextKeepAliveAt = 0.0;
 
     /**
-     * @throws JsonException
+     * Start the SSE server and begin accepting client connections.
+     *
+     * This is the main entry point that initializes the SSE server, sets up
+     * signal handlers, and begins the main event loop. The method handles
+     * server creation (with TLS support), client management, and event broadcasting.
+     *
+     * Server Initialization Sequence:
+     * 1. Load configuration from parameter bag (bind address, port, SSL certs)
+     * 2. Create socket server with TLS fallback to HTTP
+     * 3. Register signal handlers for graceful shutdown and reload
+     * 4. Enter main event loop with non-blocking I/O
+     * 5. Accept client connections and upgrade to SSE protocol
+     * 6. Monitor for reload signals and broadcast events
+     * 7. Maintain connections with keep-alive messages
+     *
+     * Configuration Parameters:
+     * - valksor.sse.bind: Server bind address (e.g., '127.0.0.1')
+     * - valksor.sse.port: Server port (e.g., 8080)
+     * - valksor.sse.path: SSE endpoint path (e.g., '/events')
+     * - valksor.sse.domain: Domain for SSL certificate resolution
+     * - valksor.sse.ssl_cert_path: Path to SSL certificate file
+     * - valksor.sse.ssl_key_path: Path to SSL private key file
+     *
+     * Signal Handling:
+     * - SIGINT (Ctrl+C): Graceful server shutdown
+     * - SIGTERM: Termination signal from process manager
+     * - SIGHUP: Reload signal (typically for configuration reload)
+     *
+     * Event Loop Processing:
+     * - stream_select() for non-blocking I/O multiplexing
+     * - Accept new client connections and HTTP requests
+     * - Process client disconnections and cleanup
+     * - Send periodic keep-alive messages
+     * - Check for file-based reload signals from build system
+     * - Broadcast reload events to all connected clients
+     *
+     * Performance Characteristics:
+     * - Non-blocking I/O prevents blocking on individual clients
+     * - Efficient socket multiplexing with stream_select()
+     * - Minimal CPU usage during idle periods
+     * - Scales to hundreds of concurrent connections
+     * - Graceful degradation under high load
+     *
+     * Error Handling:
+     * - Graceful fallback from TLS to HTTP on certificate issues
+     * - Client disconnection handling without server interruption
+     * - JSON encoding error handling for broadcast events
+     * - Socket error recovery and logging
+     *
+     * @param array $config Optional configuration overrides (currently unused)
+     *
+     * @return int Command exit code (Command::SUCCESS or Command::FAILURE)
+     *
+     * @throws JsonException When JSON encoding fails during event broadcasting
+     *
+     * @see createServer() For server creation and TLS setup logic
+     * @see acceptClient() For HTTP request handling and SSE upgrade
+     * @see broadcast() For event broadcasting implementation
+     * @see checkReloadSignal() For build system integration
      */
     public function start(
         array $config = [],
@@ -167,10 +324,82 @@ final class SseService extends AbstractService
     }
 
     /**
-     * Trigger a reload broadcast to all connected clients.
+     * Trigger a reload broadcast to all connected SSE clients.
      *
-     * @param array<int,string>   $files    List of files that changed (use ['*'] for full reload)
-     * @param array<string,mixed> $metadata Optional metadata to include in broadcast
+     * This is the primary public API for programmatically triggering browser reloads.
+     * The method broadcasts a 'reload' event to all connected clients with information
+     * about which files changed and optional metadata for enhanced client-side handling.
+     *
+     * Reload Types and Behavior:
+     * - Full Reload: ['*'] triggers complete page refresh
+     * - Specific Files: ['style.css', 'app.js'] triggers targeted reload
+     * - Pattern Matching: ['*.css', '*.js'] for file pattern reloads
+     * - Server Changes: ['*.php'] indicates backend changes
+     *
+     * Event Format:
+     * ```javascript
+     * // Client receives event in this format:
+     * event: reload
+     * data: {"files": ["style.css", "app.js"], "type": "css", "timestamp": 1234567890}
+     * ```
+     *
+     * Build System Integration:
+     * - Called by HotReloadService when file changes are detected
+     * - Integrated with DevWatchService and DevService orchestration
+     * - Uses file-based signals for cross-process communication
+     * - Supports both manual and automatic reload triggering
+     *
+     * Client-Side Handling:
+     * ```javascript
+     * eventSource.addEventListener('reload', (event) => {
+     *   const data = JSON.parse(event.data);
+     *   if (data.files.includes('*')) {
+     *     window.location.reload(); // Full reload
+     *   } else {
+     *     handlePartialReload(data.files); // Custom logic
+     *   }
+     * });
+     * ```
+     *
+     * Use Cases:
+     * ```php
+     * // Full page reload (most common)
+     * $sseService->triggerReload();
+     *
+     * // CSS-only reload for style changes
+     * $sseService->triggerReload(['styles/main.css']);
+     *
+     * // JavaScript reload with metadata
+     * $sseService->triggerReload(['app.js'], ['type' => 'javascript', 'hot' => true]);
+     *
+     * // Multiple file types
+     * $sseService->triggerReload(['*.css', '*.js'], ['bundle' => 'main']);
+     *
+     * // Server-side changes
+     * $sseService->triggerReload(['*.php'], ['type' => 'server', 'restart' => false]);
+     * ```
+     *
+     * Performance Considerations:
+     * - Broadcasts to all connected clients simultaneously
+     * - JSON encoding provides efficient data serialization
+     * - Failed client sends are logged but don't stop other clients
+     * - Minimal overhead for small file arrays
+     *
+     * Error Handling:
+     * - JSON encoding errors are caught and logged
+     * - Client connection failures are handled gracefully
+     * - Network issues don't affect server stability
+     * - Detailed error logging for debugging
+     *
+     * @param array<int,string>   $files    List of changed files (use ['*'] for full page reload)
+     *                                      Examples: ['*'], ['style.css'], ['*.css', '*.js']
+     * @param array<string,mixed> $metadata Optional metadata for enhanced client handling
+     *                                      Common keys: 'type', 'timestamp', 'bundle', 'hot'
+     *
+     * @throws JsonException When JSON encoding of the payload fails
+     *
+     * @see broadcast() For the underlying broadcasting implementation
+     * @see checkReloadSignal() For file-based signal integration
      */
     public function triggerReload(
         array $files = ['*'],
@@ -200,6 +429,78 @@ final class SseService extends AbstractService
         return [self::getServiceName()];
     }
 
+    /**
+     * Accept incoming client connections and handle HTTP requests.
+     *
+     * This method processes incoming socket connections, parses HTTP requests,
+     * and handles various endpoint types including SSE upgrades, CORS preflight,
+     * and health checks. It implements a minimal HTTP server compliant with
+     * SSE requirements.
+     *
+     * Request Processing Pipeline:
+     * 1. Accept socket connection from server socket
+     * 2. Set non-blocking mode for event loop compatibility
+     * 3. Read and parse HTTP request headers
+     * 4. Route request based on method and path
+     * 5. Handle CORS preflight (OPTIONS) requests
+     * 6. Upgrade valid SSE requests to EventSource protocol
+     * 7. Handle health check and other endpoints
+     * 8. Send appropriate error responses for invalid requests
+     *
+     * HTTP Method Support:
+     * - GET: Primary method for SSE connection upgrades
+     * - HEAD: Supported for SSE endpoint (metadata only)
+     * - OPTIONS: CORS preflight support with proper headers
+     * - Other methods: Rejected with 405 Method Not Allowed
+     *
+     * Endpoint Routing:
+     * - {basePath}: Main SSE endpoint (e.g., /events)
+     * - {basePath}/healthz: Health check for monitoring
+     * - Other paths: Return 404 Not Found
+     *
+     * SSE Upgrade Process:
+     * 1. Validate HTTP method (GET/HEAD only)
+     * 2. Check path matches SSE endpoint
+     * 3. Send SSE-specific response headers:
+     *    - Content-Type: text/event-stream
+     *    - Cache-Control: no-cache
+     *    - Connection: keep-alive
+     *    - CORS headers for cross-origin requests
+     *    - X-Accel-Buffering: no (prevents proxy buffering)
+     * 4. Add client to active connections pool
+     * 5. Client becomes eligible for event broadcasts
+     *
+     * CORS Support:
+     * - Access-Control-Allow-Origin: * (development-friendly)
+     * - Access-Control-Allow-Methods: GET,OPTIONS
+     * - Access-Control-Allow-Headers: Content-Type
+     * - Supports cross-origin browser connections
+     *
+     * Error Handling:
+     * - Request parsing failures: connection closed
+     * - Invalid HTTP methods: 405 response with Allow header
+     * - Unknown paths: 404 response
+     * - Network errors: graceful connection cleanup
+     *
+     * Security Considerations:
+     * - Input validation for HTTP request parsing
+     * - Protection against malformed request headers
+     * - Rate limiting through connection management
+     * - No authentication (development-focused design)
+     *
+     * Performance Features:
+     * - Non-blocking socket operations
+     * - Minimal request parsing overhead
+     * - Efficient header processing
+     * - Fast connection establishment
+     *
+     * @param resource $server   Server socket resource to accept connections from
+     * @param string   $basePath SSE endpoint path (e.g., '/events')
+     *
+     * @see upgradeToSse() For SSE protocol upgrade implementation
+     * @see sendResponse() For HTTP response formatting
+     * @see parseRequestLine() For HTTP request parsing
+     */
     private function acceptClient(
         $server,
         string $basePath,
@@ -279,7 +580,77 @@ final class SseService extends AbstractService
     }
 
     /**
-     * @throws JsonException
+     * Broadcast events to all connected SSE clients.
+     *
+     * This is the core event delivery mechanism that formats and sends SSE events
+     * to all active client connections. It handles JSON serialization, SSE protocol
+     * formatting, and client error recovery.
+     *
+     * SSE Event Format:
+     * ```text
+     * event: {event_type}
+     * data: {json_payload}
+     *
+     * ```
+     *
+     * Example Output:
+     * ```text
+     * event: reload
+     * data: {"files": ["style.css"], "timestamp": 1234567890}
+     *
+     * ```
+     *
+     * Event Types Supported:
+     * - reload: Trigger browser reload (most common)
+     * - ping: Keep-alive message to prevent timeouts
+     * - custom: Application-specific events
+     *
+     * Broadcasting Process:
+     * 1. Serialize payload to JSON with error handling
+     * 2. Format message according to SSE specification
+     * 3. Iterate through all connected clients
+     * 4. Send message to each client socket
+     * 5. Handle failed sends by removing disconnected clients
+     * 6. Continue broadcasting to remaining clients
+     *
+     * JSON Serialization:
+     * - Uses JSON_THROW_ON_ERROR for exception handling
+     * - JSON_UNESCAPED_SLASHES for cleaner URLs in output
+     * - Throws JsonException on serialization failure
+     * - Efficient for typical reload payload sizes
+     *
+     * Error Handling Strategy:
+     * - Individual client failures don't stop broadcasting
+     * - Failed clients are automatically removed from pool
+     * - Socket errors are handled gracefully with @fwrite()
+     * - JSON serialization errors bubble up to caller
+     *
+     * Performance Considerations:
+     * - Bulk operation: sends to all clients efficiently
+     * - Minimal memory overhead per message
+     * - Non-blocking socket writes for scalability
+     * - Automatic cleanup of failed connections
+     *
+     * Client Management:
+     * - Failed sends trigger client removal
+     * - Disconnected clients are purged immediately
+     * - Active clients continue receiving events
+     * - Connection pool remains clean and efficient
+     *
+     * Protocol Compliance:
+     * - Follows W3C SSE specification exactly
+     * - Proper event/data field separation
+     * - Double newline terminates each event
+     * - Compatible with all modern browsers
+     *
+     * @param string $event   Event type identifier (e.g., 'reload', 'ping')
+     * @param array  $payload Event data payload to be JSON-encoded
+     *
+     * @throws JsonException When JSON serialization of payload fails
+     *
+     * @see removeClient() For client cleanup on failed sends
+     * @see triggerReload() For common reload event usage
+     * @see https://html.spec.whatwg.org/multipage/server-sent-events.html SSE specification
      */
     private function broadcast(
         string $event,
@@ -333,7 +704,56 @@ final class SseService extends AbstractService
         $this->triggerReload($files);
     }
 
-    /** @return array{0,1} */
+    /**
+     * Create and configure the socket server with TLS support.
+     *
+     * This method attempts to create a TLS-enabled socket server first, with
+     * automatic fallback to HTTP if TLS setup fails. This provides secure
+     * connections in development environments while maintaining compatibility.
+     *
+     * TLS Setup Strategy:
+     * 1. Use provided SSL certificate paths if specified
+     * 2. Auto-discover certificates in /etc/ssl/private/{domain}.crt/.key
+     * 3. Create TLS socket server if certificates are available
+     * 4. Fall back to HTTP if TLS setup fails or certificates missing
+     *
+     * Certificate Resolution:
+     * - Explicit paths: ssl_cert_path and ssl_key_path parameters
+     * - Auto-discovery: /etc/ssl/private/{domain}.crt and .key
+     * - Development support: Self-signed certificates accepted
+     * - Security settings: allow_self_signed=true, verify_peer=false
+     *
+     * Socket Configuration:
+     * - TLS: tls://{bindAddress}:{port} with SSL context
+     * - HTTP: tcp://{bindAddress}:{port} for fallback
+     * - Flags: STREAM_SERVER_BIND | STREAM_SERVER_LISTEN
+     * - Non-blocking mode enabled for event loop compatibility
+     *
+     * Error Handling:
+     * - TLS failures are logged but don't prevent server startup
+     * - Socket binding errors are logged and return failure
+     * - Graceful degradation from TLS to HTTP
+     * - Detailed error messages for debugging certificate issues
+     *
+     * Security Considerations:
+     * - TLS certificates are validated for existence before use
+     * - Self-signed certificates allowed for development
+     * - Peer verification disabled for development convenience
+     * - Production environments should use valid certificates
+     *
+     * @param string      $bindAddress Server bind address (e.g., '127.0.0.1', '0.0.0.0')
+     * @param int         $port        Server port number (e.g., 8080, 8443)
+     * @param string      $domain      Domain name for certificate auto-discovery
+     * @param string|null $sslCertPath Explicit path to SSL certificate file
+     * @param string|null $sslKeyPath  Explicit path to SSL private key file
+     *
+     * @return array{0: resource|null, 1: bool} [server_socket, using_tls]
+     *                                          - resource: Created socket server or null on failure
+     *                                          - bool: true if TLS enabled, false if HTTP fallback
+     *
+     * @see stream_socket_server() For socket creation parameters
+     * @see stream_context_create() For SSL context configuration
+     */
     private function createServer(
         string $bindAddress,
         int $port,

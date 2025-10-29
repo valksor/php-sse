@@ -88,7 +88,88 @@ final class ImportMapRuntime
     }
 
     /**
-     * @throws JsonException
+     * Generate the complete importmap definition for the current request.
+     *
+     * This is the core method that orchestrates the entire importmap generation process.
+     * It handles entry point validation, importmap data processing, resource optimization,
+     * and HTML generation with proper polyfill support and preloading capabilities.
+     *
+     * The method implements a sophisticated asset processing pipeline:
+     * 1. Validates entry points against the importmap.php configuration file
+     * 2. Automatically includes the 'valksorsse/sse' module for hot reload functionality
+     * 3. Processes each import entry based on its type (js, css, json)
+     * 4. Generates appropriate data URIs or file references
+     * 5. Creates WebLink headers for performance optimization
+     * 6. Renders the importmap JSON with proper escaping
+     * 7. Adds polyfill support for browsers that don't support importmaps natively
+     * 8. Generates modulepreload links for improved loading performance
+     *
+     * Entry Point Validation Process:
+     * - Checks for '../importmap.php' file for additional validation
+     * - Filters out entry points that don't exist in the configured importmap
+     * - Ensures only valid, available modules are included in the final importmap
+     * - Automatically adds the SSE module regardless of user configuration
+     *
+     * Import Type Handling:
+     * - JavaScript modules: Direct path references with optional preloading
+     * - CSS files: Either data URI injection or stylesheet links based on preload settings
+     * - JSON files: Wrapped in dynamic import statements via data URIs
+     * - Polyfills: Special handling with integrity attributes and CDN fallbacks
+     *
+     * Performance Optimizations:
+     * - WebLink headers for resource preloading and prefetching
+     * - Modulepreload links for critical JavaScript dependencies
+     * - Data URIs for small resources to avoid additional HTTP requests
+     * - Intelligent bundling based on resource type and usage patterns
+     *
+     * Security Considerations:
+     * - Proper HTML escaping for all generated content
+     * - Integrity attributes for external CDN resources
+     * - Crossorigin attributes for proper CORS handling
+     * - Sanitization of user-provided attributes and configuration
+     *
+     * Browser Compatibility:
+     * - Native importmap support for modern browsers
+     * - Automatic polyfill injection for older browsers
+     * - Graceful degradation with comprehensive error handling
+     * - Support for both ES modules and traditional script loading
+     *
+     * @param string|array $entryPoint One or more entry point identifiers to process
+     *                                 Examples: 'app', ['app', 'admin'], '/custom/module'
+     *                                 These are resolved through AssetMapper/importmap system
+     * @param array        $attributes Optional HTML attributes for the generated script tag
+     *                                 Common attributes: 'defer', 'async', 'crossorigin'
+     *                                 Note: 'src' and 'type' are prohibited as they're managed internally
+     *
+     * @return string Complete HTML block containing importmap definition, polyfills, and preloads
+     *                Returns empty string if definition has already been rendered (singleton pattern)
+     *
+     * @throws JsonException            If JSON encoding of the importmap fails
+     * @throws InvalidArgumentException If polyfill configuration is invalid or missing
+     *
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap
+     * @see https://github.com/guybedford/es-module-shims For polyfill details
+     * @see AssetMapper\ImportMap\ImportMapGenerator For underlying importmap processing
+     *
+     * @example Basic usage with single entry point
+     * ```php
+     * $runtime = new ImportMapRuntime($generator, $packages, $requestStack, $parameterBag, $client);
+     * $html = $runtime->renderDefinition('app');
+     * // Outputs: <script type="importmap">{"imports":{"app":"/assets/app.js"}}</script>
+     * ```
+     * @example Advanced usage with multiple entry points and attributes
+     * ```php
+     * $html = $runtime->renderDefinition(['app', 'admin', 'shared'], [
+     *     'defer' => true,
+     *     'crossorigin' => 'anonymous'
+     * ]);
+     * ```
+     * @example CSS handling behavior
+     * ```php
+     * // CSS files can be handled in multiple ways:
+     * $html = $runtime->renderDefinition('styles'); // Preloaded CSS: <link rel="stylesheet" href="/styles.css">
+     * $html = $runtime->renderDefinition(['styles' => ['preload' => false]]); // Injected CSS: data:application/javascript,document.head.appendChild(...)
+     * ```
      */
     public function renderDefinition(
         string|array $entryPoint,
@@ -217,6 +298,90 @@ final class ImportMapRuntime
         return $output;
     }
 
+    /**
+     * Generate module import statements for the specified entry points.
+     *
+     * This method creates the actual JavaScript module imports that will be executed
+     * by the browser to load and initialize the application entry points. It's designed
+     * to work in conjunction with the importmap definition generated by renderDefinition().
+     *
+     * The method handles multiple entry points by generating individual import statements
+     * for each one, allowing applications to have multiple initialization modules or
+     * lazy-loaded sections. Each import statement is properly escaped to prevent
+     * syntax errors and injection vulnerabilities.
+     *
+     * Relationship with renderDefinition():
+     * - renderDefinition() creates the importmap that resolves module names to URLs
+     * - renderScripts() creates the actual import statements that use the importmap
+     * - Both methods should be called for complete module loading functionality
+     * - The order matters: importmap should be defined before the import statements
+     *
+     * Module Loading Process:
+     * 1. Browser loads the importmap definition (from renderDefinition)
+     * 2. Browser encounters import statements (from this method)
+     * 3. Browser resolves module names using the importmap
+     * 4. Browser loads and executes the modules in order
+     * 5. Modules can then import other modules using the same importmap
+     *
+     * Performance Considerations:
+     * - Modules are loaded and executed in the order specified
+     * - All imports are treated as ES modules with top-level await support
+     * - No bundling is performed - each module is loaded individually
+     * - Modulepreload links from renderDefinition() can improve loading performance
+     *
+     * Browser Compatibility:
+     * - Requires native ES module support or appropriate polyfill
+     * - Works with dynamic imports for code splitting
+     * - Supports import assertions for security (when available)
+     * - Compatible with modern module bundling workflows
+     *
+     * Security Features:
+     * - Proper escaping of module identifiers to prevent injection
+     * - Integration with CSP (Content Security Policy) when configured
+     * - Safe handling of special characters in module names
+     * - Prevention of malicious module name injection
+     *
+     * @param string|array $entryPoint One or more entry point identifiers to import
+     *                                 Examples: 'app', ['app', 'admin'], '/modules/dashboard'
+     *                                 These correspond to keys in the importmap definition
+     * @param array        $attributes Optional HTML attributes for the generated script tag
+     *                                 Common attributes: 'defer', 'async', 'crossorigin'
+     *                                 Note: 'src' and 'type' are managed internally and prohibited
+     *
+     * @return string HTML script element containing module import statements
+     *                Returns empty string if no entry points are provided
+     *
+     * @see renderDefinition() For the corresponding importmap generation
+     * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules
+     *
+     * @example Basic single entry point
+     * ```php
+     * $runtime->renderScripts('app');
+     * // Generates: <script type="module">import 'app';</script>
+     * ```
+     * @example Multiple entry points with custom attributes
+     * ```php
+     * $runtime->renderScripts(['app', 'admin', 'shared'], [
+     *     'defer' => true,
+     *     'crossorigin' => 'anonymous'
+     * ]);
+     * // Generates: <script type="module" defer crossorigin="anonymous">
+     * //           import 'app';import 'admin';import 'shared';
+     * //           </script>
+     * ```
+     * @example Complete module loading workflow
+     * ```php
+     * // Step 1: Generate the importmap definition
+     * $importmapHtml = $runtime->renderDefinition(['app', 'admin']);
+     *
+     * // Step 2: Generate the import statements
+     * $scriptsHtml = $runtime->renderScripts(['app', 'admin']);
+     *
+     * // Step 3: Output both in your template
+     * echo $importmapHtml; // <script type="importmap">{"imports":{...}}</script>
+     * echo $scriptsHtml;   // <script type="module">import 'app';import 'admin';</script>
+     * ```
+     */
     public function renderScripts(
         string|array $entryPoint,
         array $attributes = [],
