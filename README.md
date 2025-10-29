@@ -34,6 +34,7 @@ composer require valksor/php-sse
 - Symfony Framework
 - Twig templating engine
 - Valksor Bundle (for automatic configuration)
+- AssetMapper integration (automatic)
 
 ## Usage
 
@@ -60,6 +61,29 @@ valksor:
         port: 8080           # SSE server port
         host: localhost       # SSE server host
         ping_interval: 30     # Ping interval in seconds
+```
+
+3. Set up asset mapping:
+
+Copy the importmap.php.example file from the SSE component to your project root:
+
+```bash
+# Copy from the SSE component Resources directory
+cp src/valksor/src/Valksor/Component/Sse/Resources/importmap.php.example importmap.php
+```
+
+The configuration automatically detects your environment and includes SSE assets from:
+- Local development (`valksor/` directory)
+- FullStack package (`vendor/valksor/valksor/`)
+- Standalone SSE package (`vendor/valksor/php-sse/`)
+
+4. Add SSE to your template:
+
+```twig
+{# In your base layout template #}
+{% block javascripts %}
+    {{ include('@ValksorSse/sse.html.twig') }}
+{% endblock %}
 ```
 
 ### Development Server
@@ -137,25 +161,52 @@ For build system integration examples, see the ValksorDev Build Tools documentat
 - Integration with other build systems
 - Manual process control preferred
 
+### Asset Setup
+
+The SSE component requires an importmap.php configuration in your project root that automatically detects and includes the SSE assets.
+
+Copy the importmap.php.example file from the SSE component to your project root:
+
+```bash
+# Copy from the SSE component Resources directory
+cp src/valksor/src/Valksor/Component/Sse/Resources/importmap.php.example importmap.php
+```
+
+The configuration automatically detects your environment and includes SSE assets from:
+- Local development (`valksor/` directory)
+- FullStack package (`vendor/valksor/valksor/`)
+- Standalone SSE package (`vendor/valksor/php-sse/`)
+
 ### Twig Integration
 
-The component provides Twig functions for client-side SSE integration:
+The component provides SSE integration through a simple template include:
 
 ```twig
-{# Add import map definition to your HTML head #}
-<head>
-    {{ valksor_sse_importmap_definition() }}
-</head>
+{# Add the SSE template include to your layout #}
+{% block javascripts %}
+    {{ include('@ValksorSse/sse.html.twig') }}
+{% endblock %}
+```
 
-{# Load the SSE scripts at the end of body #}
-<body>
-    <!-- Your content -->
+The SSE template automatically handles:
+- Server connection detection via `valksor_sse_ping()`
+- Meta tag injection for SSE configuration (`valksor-sse-port`, `valksor-sse-path`)
+- JavaScript client loading via `valksor_sse_importmap_scripts(['valksorsse/sse'])`
 
-    {{ valksor_sse_importmap_scripts() }}
-</body>
+For advanced usage, you can also use the individual Twig functions:
 
-{# Optional: Add ping for connection testing #}
-{{ valksor_sse_ping() }}
+```twig
+{# Manual import map definition #}
+{{ valksor_sse_importmap_definition(['your-assets']) }}
+
+{# Manual script loading #}
+{{ valksor_sse_importmap_scripts(['your-assets']) }}
+
+{# Connection testing #}
+{% if valksor_sse_ping() %}
+    <meta name="valksor-sse-port" content="{{ valksor_sse_port }}">
+    <meta name="valksor-sse-path" content="{{ valksor_sse_path }}">
+{% endif %}
 ```
 
 ### Frontend JavaScript Usage
@@ -311,18 +362,9 @@ class AppSseService extends SseService
 }
 ```
 
-### Asset Mapper Integration
+### Automatic Asset Management
 
-The component integrates with Symfony's AssetMapper for modern JavaScript handling:
-
-```yaml
-# config/packages/asset_mapper.yaml
-framework:
-    asset_mapper:
-        paths:
-            - '%kernel.project_dir%/assets'
-            # SSE assets are automatically registered
-```
+The SSE component automatically handles all asset management through the importmap.php configuration. No manual AssetMapper configuration is required.
 
 ### Process Management
 
