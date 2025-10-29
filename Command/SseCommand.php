@@ -23,10 +23,10 @@ use Valksor\Component\Sse\Service\SseService;
 final class SseCommand extends AbstractCommand
 {
     public function __construct(
-        ParameterBagInterface $bag,
+        ParameterBagInterface $parameterBag,
         private readonly SseService $sseService,
     ) {
-        parent::__construct($bag);
+        parent::__construct($parameterBag);
     }
 
     /**

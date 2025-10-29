@@ -78,12 +78,12 @@ final class SseService extends AbstractService
     public function start(
         array $config = [],
     ): int {
-        $bindAddress = $this->bag->get('valksor.sse.bind');
-        $port = $this->bag->get('valksor.sse.port');
-        $basePath = $this->bag->get('valksor.sse.path');
-        $domain = $this->bag->get('valksor.sse.domain');
-        $sslCert = $this->bag->get('valksor.sse.ssl_cert_path');
-        $sslKey = $this->bag->get('valksor.sse.ssl_key_path');
+        $bindAddress = $this->parameterBag->get('valksor.sse.bind');
+        $port = $this->parameterBag->get('valksor.sse.port');
+        $basePath = $this->parameterBag->get('valksor.sse.path');
+        $domain = $this->parameterBag->get('valksor.sse.domain');
+        $sslCert = $this->parameterBag->get('valksor.sse.ssl_cert_path');
+        $sslKey = $this->parameterBag->get('valksor.sse.ssl_key_path');
 
         $this->io->note('[sse] tarting SSE server');
 
@@ -299,7 +299,7 @@ final class SseService extends AbstractService
 
     private function checkReloadSignal(): void
     {
-        $signalFile = $this->bag->get('kernel.project_dir') . '/var/run/valksor-reload.signal';
+        $signalFile = $this->parameterBag->get('kernel.project_dir') . '/var/run/valksor-reload.signal';
 
         if (!is_file($signalFile)) {
             return;

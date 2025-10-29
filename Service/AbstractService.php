@@ -46,9 +46,9 @@ abstract class AbstractService implements ServiceInterface
     protected bool $shouldShutdown = false;
 
     public function __construct(
-        protected ParameterBagInterface $bag,
+        protected ParameterBagInterface $parameterBag,
     ) {
-        $this->projectDir = $bag->get('kernel.project_dir');
+        $this->projectDir = $parameterBag->get('kernel.project_dir');
     }
 
     abstract public static function getServiceName(): string;
@@ -162,7 +162,7 @@ abstract class AbstractService implements ServiceInterface
     public function p(
         string $name,
     ): mixed {
-        return $this->bag->get(sprintf('%s.%s', ValksorBundle::VALKSOR, $name));
+        return $this->parameterBag->get(sprintf('%s.%s', ValksorBundle::VALKSOR, $name));
     }
 
     public function parseCommaSeparatedList(

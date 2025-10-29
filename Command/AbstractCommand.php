@@ -13,37 +13,19 @@
 namespace Valksor\Component\Sse\Command;
 
 use RuntimeException;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Valksor\Bundle\Command\AbstractCommand as BundleAbstractCommand;
 use Valksor\Bundle\ValksorBundle;
 use Valksor\Component\Sse\Helper;
 
 use function sprintf;
 
-abstract class AbstractCommand extends Command
+abstract class AbstractCommand extends BundleAbstractCommand
 {
     use Helper;
-
-    protected string $projectDir;
-
-    public function __construct(
-        protected ParameterBagInterface $bag,
-    ) {
-        parent::__construct();
-        $this->projectDir = $bag->get('kernel.project_dir');
-    }
-
-    protected function createSymfonyStyle(
-        InputInterface $input,
-        OutputInterface $output,
-    ): SymfonyStyle {
-        return new SymfonyStyle($input, $output);
-    }
 
     /**
      * @throws ExceptionInterface
@@ -64,32 +46,10 @@ abstract class AbstractCommand extends Command
         return $command->run($input, $output);
     }
 
-    protected function handleCommandError(
-        string $message = '',
-        ?SymfonyStyle $io = null,
-    ): int {
-        if ($message && $io) {
-            $io->error($message);
-        }
-
-        return Command::FAILURE;
-    }
-
-    protected function handleCommandSuccess(
-        string $message = '',
-        ?SymfonyStyle $io = null,
-    ): int {
-        if ($message && $io) {
-            $io->success($message);
-        }
-
-        return Command::SUCCESS;
-    }
-
     protected function p(
         string $name,
     ): mixed {
-        return $this->bag->get(sprintf('%s.%s', ValksorBundle::VALKSOR, $name));
+        return $this->parameterBag->get(sprintf('%s.%s', ValksorBundle::VALKSOR, $name));
     }
 
     protected function setServiceIo(

@@ -64,7 +64,7 @@ final class ImportMapRuntime
         private readonly ImportMapGenerator $importMapGenerator,
         private readonly ?Packages $assetPackages,
         private readonly ?RequestStack $requestStack,
-        private readonly ParameterBagInterface $bag,
+        private readonly ParameterBagInterface $parameterBag,
         private readonly HttpClientInterface $client,
     ) {
         $this->charset = 'UTF-8';
@@ -310,9 +310,9 @@ final class ImportMapRuntime
 
         if (null === $_url) {
             $_url = 'https://' .
-                $this->bag->get('valksor.sse.domain') .
+                $this->parameterBag->get('valksor.sse.domain') .
                 $this->getPort() .
-                $this->bag->get('valksor.sse.path');
+                $this->parameterBag->get('valksor.sse.path');
         }
 
         return $_url;
