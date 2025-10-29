@@ -12,6 +12,7 @@
 
 namespace Valksor\Component\Sse\Service;
 
+use Exception;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Valksor\Bundle\ValksorBundle;
@@ -191,6 +192,38 @@ abstract class AbstractService implements ServiceInterface
         $this->io = $io;
 
         return $this;
+    }
+
+    /**
+     * Start service with full lifecycle management (PID file, error handling, cleanup).
+     *
+     * @param SymfonyStyle $io The console IO for output
+     *
+     * @return int Exit code from the service start method
+     */
+    public function startWithLifecycle(
+        SymfonyStyle $io,
+    ): int {
+        $this->setIo($io);
+
+        // Kill any conflicting processes before starting
+        $this->killConflictingSseProcesses($io);
+
+        // Set up PID file
+        $this->createPidFilePath(static::getServiceName());
+        $this->writePidFile();
+
+        try {
+            $exitCode = $this->start();
+            $this->removePidFile();
+
+            return $exitCode;
+        } catch (Exception $e) {
+            $this->removePidFile();
+            $io->error(sprintf('Service %s failed: %s', static::getServiceName(), $e->getMessage()));
+
+            return 1;
+        }
     }
 
     public function stop(): void

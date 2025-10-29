@@ -12,6 +12,7 @@
 
 namespace Valksor\Component\Sse;
 
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Valksor\Functions\Iteration\Traits\_JsonDecode;
 use Valksor\Functions\Iteration\Traits\_JsonEncode;
 use Valksor\Functions\Local\Traits\_MkDir;
@@ -58,5 +59,18 @@ trait Helper
         }
 
         return $_helper->jsonEncode($data);
+    }
+
+    /**
+     * Set SymfonyStyle on service objects that support it.
+     * Uses method existence checking for robustness.
+     */
+    protected function setServiceIo(
+        object $service,
+        SymfonyStyle $io,
+    ): void {
+        if (method_exists($service, 'setIo')) {
+            $service->setIo($io);
+        }
     }
 }

@@ -38,17 +38,6 @@ final class SseCommand extends AbstractCommand
     ): int {
         $io = $this->createSymfonyStyle($input, $output);
 
-        $this->sseService->killConflictingSseProcesses($io);
-
-        $this->setServiceIo($this->sseService, $io);
-
-        $this->sseService->createPidFilePath($this->sseService::getServiceName());
-        $this->sseService->writePidFile();
-
-        $exitCode = $this->sseService->start();
-
-        $this->sseService->removePidFile();
-
-        return $exitCode;
+        return $this->sseService->startWithLifecycle($io);
     }
 }

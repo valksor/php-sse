@@ -16,7 +16,6 @@ use RuntimeException;
 use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 use Valksor\Bundle\Command\AbstractCommand as BundleAbstractCommand;
 use Valksor\Bundle\ValksorBundle;
 use Valksor\Component\Sse\Helper;
@@ -50,12 +49,5 @@ abstract class AbstractCommand extends BundleAbstractCommand
         string $name,
     ): mixed {
         return $this->parameterBag->get(sprintf('%s.%s', ValksorBundle::VALKSOR, $name));
-    }
-
-    protected function setServiceIo(
-        object $service,
-        SymfonyStyle $io,
-    ): void {
-        $service->setIo($io);
     }
 }
