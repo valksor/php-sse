@@ -1,10 +1,5 @@
 # Valksor Component: SSE
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/valksor/php-sse.svg)](https://packagist.org/packages/valksor/php-sse)
-[![Total Downloads](https://img.shields.io/packagist/dt/valksor/php-sse.svg)](https://packagist.org/packages/valksor/php-sse)
-[![License](https://img.shields.io/packagist/l/valksor/php-sse.svg)](LICENSE)
-[![PHP Version Require](https://img.shields.io/packagist/require-v/valksor/php-sse/php)](https://packagist.org/packages/valksor/php-sse)
-
 A Server-Sent Events (SSE) component that provides real-time, unidirectional communication from server to client, enabling live updates, programmatic reloads, and dynamic content streaming in Symfony applications.
 
 ## Features
