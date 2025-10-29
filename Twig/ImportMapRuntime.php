@@ -28,6 +28,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
 use function addslashes;
+use function array_key_exists;
 use function class_exists;
 use function count;
 use function htmlspecialchars;
@@ -99,6 +100,18 @@ final class ImportMapRuntime
 
         $this->definitionRendered = true;
         $entryPoint = (array) $entryPoint;
+
+        if (is_file('../importmap.php')) {
+            $keys = array_keys(include '../importmap.php');
+
+            foreach ($entryPoint as $key => $value) {
+                if (!array_key_exists($value, $keys)) {
+                    unset($entryPoint[$key]);
+                }
+            }
+        }
+
+        $entryPoint[] = 'valksorsse/sse';
 
         $importMapData = $this->importMapGenerator->getImportMapData($entryPoint);
         $importMap = [];

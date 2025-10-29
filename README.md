@@ -80,6 +80,63 @@ The server will:
 - Provide automatic browser reload functionality
 - Manage process lifecycle and cleanup
 
+### Integration with Valksor Dev Tools
+
+The SSE component is automatically integrated with the new Valksor build system architecture:
+
+#### Automatic SSE Integration with Development Commands
+
+When using the new 3-command architecture:
+
+```bash
+# Lightweight development (includes SSE + hot reload)
+php bin/console valksor:dev
+
+# Full development environment (includes SSE + all services)
+php bin/console valksor:watch
+```
+
+Both commands automatically start the SSE server as part of the `hot_reload` provider, so you don't need to run `valksor:sse` separately during development.
+
+#### Build System Integration
+
+The SSE component works seamlessly with the service registry architecture:
+
+- **Provider Integration**: SSE functionality is provided by the `HotReloadProvider`
+- **Flag-Based Execution**: Automatically runs with commands that use the `dev` flag
+- **Process Management**: SSE processes are managed by the build system's process manager
+- **Dependency Resolution**: SSE server starts before file watching begins
+
+#### Configuration Integration
+
+The SSE component can be used independently or integrated with other systems:
+
+```yaml
+# config/packages/valksor.yaml - SSE-only configuration
+valksor:
+    sse:
+        enabled: true
+        port: 8080
+        host: localhost
+        ping_interval: 30
+```
+
+For build system integration examples, see the ValksorDev Build Tools documentation.
+
+#### When to Use Standalone SSE vs Build System Integration
+
+**Use Build System Integration (`valksor:dev`/`valksor:watch`):**
+- Development environment with hot reload
+- Multiple services need to run together
+- Automatic process management required
+- File watching + SSE functionality needed
+
+**Use Standalone SSE (`valksor:sse`):**
+- Production SSE server deployment
+- Custom SSE-only applications
+- Integration with other build systems
+- Manual process control preferred
+
 ### Twig Integration
 
 The component provides Twig functions for client-side SSE integration:
