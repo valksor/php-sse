@@ -186,6 +186,10 @@ final class ImportMapRuntime
             $keys = array_keys(include '../importmap.php');
 
             foreach ($entryPoint as $key => $value) {
+                if (str_starts_with($value, '@')) {
+                    continue;
+                }
+
                 if (!array_key_exists($value, $keys)) {
                     unset($entryPoint[$key]);
                 }
