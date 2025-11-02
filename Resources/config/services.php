@@ -238,7 +238,7 @@ return static function (
     // Resource: Loads all PHP files from component root directory
     // Exclude: Resources directory (contains templates, assets, not services)
     $services->load(namespace: 'Valksor\\Component\\Sse\\', resource: __DIR__ . '/../../*')
-        ->exclude(excludes: [__DIR__ . '/../../{Resources}']);
+        ->exclude(excludes: [__DIR__ . '/../../{Resources,vendor,Tests}']);
 
     // Create convenient alias for AssetMapper's ImportMapGenerator
     // This enables SSE components to easily access AssetMapper functionality
