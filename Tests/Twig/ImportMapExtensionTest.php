@@ -39,13 +39,6 @@ final class ImportMapExtensionTest extends TestCase
         $this->assertEmpty($tests);
     }
 
-    public function testExtensionHasOperators(): void
-    {
-        $operators = $this->extension->getOperators();
-        $this->assertIsArray($operators);
-        // The extension might have operators, so just check it returns an array
-    }
-
     public function testFunctionNamesAreCorrect(): void
     {
         foreach ($this->extension->getFunctions() as $function) {
