@@ -43,7 +43,6 @@
         <report>
             <clover outputFile=".coverage/clover.xml"/>
             <cobertura outputFile=".coverage/cobertura.xml"/>
-            <crap4j outputFile=".coverage/crap4j.xml"/>
             <html outputDirectory=".coverage"/>
             <text outputFile=".coverage/coverage.txt"/>
         </report>

@@ -13,6 +13,7 @@
 namespace Valksor\Component\Sse\Tests;
 
 use FilesystemIterator;
+use JsonException;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -32,7 +33,7 @@ final class HelperTest extends TestCase
 {
     public function testEnsureDirectoryCreatesMissingPath(): void
     {
-        $baseDir = sys_get_temp_dir() . '/valksor_helper_' . uniqid();
+        $baseDir = sys_get_temp_dir() . '/valksor_helper_' . uniqid('', true);
         $targetDir = $baseDir . '/nested/path';
 
         $helper = new HelperAdapter();
@@ -43,6 +44,9 @@ final class HelperTest extends TestCase
         $this->removeDirectory($baseDir);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testJsonEncodeDecodeRoundTrip(): void
     {
         $payload = [

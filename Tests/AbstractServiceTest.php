@@ -67,8 +67,7 @@ final class AbstractServiceTest extends TestCase
 
     public function testParseCommaSeparatedList(): void
     {
-        $service = $this->createService();
-        $result = $service->parseCommaSeparatedList(' foo, bar , ,baz ,,');
+        $result = $this->createService()->parseCommaSeparatedList(' foo, bar , ,baz ,,');
 
         self::assertCount(3, $result);
         self::assertSame(['foo', 'bar', 'baz'], array_values($result));
@@ -118,7 +117,7 @@ final class AbstractServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->projectDir = sys_get_temp_dir() . '/valksor_service_' . uniqid();
+        $this->projectDir = sys_get_temp_dir() . '/valksor_service_' . uniqid('', true);
 
         if (!is_dir($this->projectDir) && !@mkdir($this->projectDir, recursive: true)) {
             throw new RuntimeException('Unable to create temporary project directory');
@@ -182,9 +181,9 @@ final class AbstractServiceTest extends TestCase
  */
 final class TestService extends AbstractService
 {
-    public const EVENT_KILL_CONFLICTS = 'kill_conflicts';
+    public const string EVENT_KILL_CONFLICTS = 'kill_conflicts';
 
-    public const EVENT_START = 'start';
+    public const string EVENT_START = 'start';
 
     /** @var list<string> */
     public array $events = [];
@@ -207,7 +206,7 @@ final class TestService extends AbstractService
     public function start(
         array $config = [],
     ): int {
-        $this->pidFilePath = $this->createPidFilePath(static::getServiceName());
+        $this->pidFilePath = $this->createPidFilePath(self::getServiceName());
         $this->pidFileExistsDuringStart = is_file($this->pidFilePath);
         $this->events[] = self::EVENT_START;
 
@@ -237,7 +236,7 @@ final class FailingService extends AbstractService
     public function start(
         array $config = [],
     ): int {
-        $this->pidFilePath = $this->createPidFilePath(static::getServiceName());
+        $this->pidFilePath = $this->createPidFilePath(self::getServiceName());
 
         throw new RuntimeException('start failure');
     }
