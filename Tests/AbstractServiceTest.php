@@ -12,7 +12,10 @@
 
 namespace Valksor\Component\Sse\Tests;
 
+use FilesystemIterator;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -33,30 +36,53 @@ use function uniqid;
  */
 final class AbstractServiceTest extends TestCase
 {
+    private ParameterBag $parameterBag;
     private string $projectDir;
 
-    private ParameterBag $parameterBag;
-
-    protected function setUp(): void
+    public function testIsProcessRunningRemovesInvalidPidFile(): void
     {
-        parent::setUp();
+        $service = $this->createService();
+        $pidFile = $service->createPidFilePath(TestService::getServiceName());
+        file_put_contents($pidFile, 'not-a-pid');
 
-        $this->projectDir = sys_get_temp_dir() . '/valksor_service_' . uniqid();
-
-        if (!is_dir($this->projectDir) && !@mkdir($this->projectDir, recursive: true)) {
-            throw new RuntimeException('Unable to create temporary project directory');
-        }
-
-        $this->parameterBag = new ParameterBag([
-            'kernel.project_dir' => $this->projectDir,
-            'valksor.test.value' => 'expected-value',
-        ]);
+        self::assertFalse($service->isProcessRunning(TestService::getServiceName()));
+        self::assertFalse(is_file($pidFile));
     }
 
-    protected function tearDown(): void
+    public function testIsProcessRunningReturnsTrueForExistingProcess(): void
     {
-        $this->removeDirectory($this->projectDir);
-        parent::tearDown();
+        $service = $this->createService();
+        $pidFile = $service->createPidFilePath(TestService::getServiceName());
+        file_put_contents($pidFile, (string) getmypid());
+
+        self::assertTrue($service->isProcessRunning(TestService::getServiceName()));
+    }
+
+    public function testPReadsValuesWithNamespacePrefix(): void
+    {
+        $service = $this->createService();
+
+        self::assertSame('expected-value', $service->p('test.value'));
+    }
+
+    public function testParseCommaSeparatedList(): void
+    {
+        $service = $this->createService();
+        $result = $service->parseCommaSeparatedList(' foo, bar , ,baz ,,');
+
+        self::assertCount(3, $result);
+        self::assertSame(['foo', 'bar', 'baz'], array_values($result));
+    }
+
+    public function testRemovePidFileDeletesExistingFile(): void
+    {
+        $service = $this->createService();
+        $pidFile = $service->createPidFilePath(TestService::getServiceName());
+        file_put_contents($pidFile, '123');
+
+        $service->removePidFile();
+
+        self::assertFalse(is_file($pidFile));
     }
 
     public function testStartWithLifecycleCreatesPidFileAndCleansUp(): void
@@ -88,55 +114,26 @@ final class AbstractServiceTest extends TestCase
         self::assertFalse(is_file($service->pidFilePath));
     }
 
-    public function testParseCommaSeparatedList(): void
+    protected function setUp(): void
     {
-        $service = $this->createService();
-        $result = $service->parseCommaSeparatedList(' foo, bar , ,baz ,,');
+        parent::setUp();
 
-        self::assertCount(3, $result);
-        self::assertSame(['foo', 'bar', 'baz'], array_values($result));
+        $this->projectDir = sys_get_temp_dir() . '/valksor_service_' . uniqid();
+
+        if (!is_dir($this->projectDir) && !@mkdir($this->projectDir, recursive: true)) {
+            throw new RuntimeException('Unable to create temporary project directory');
+        }
+
+        $this->parameterBag = new ParameterBag([
+            'kernel.project_dir' => $this->projectDir,
+            'valksor.test.value' => 'expected-value',
+        ]);
     }
 
-    public function testIsProcessRunningReturnsTrueForExistingProcess(): void
+    protected function tearDown(): void
     {
-        $service = $this->createService();
-        $pidFile = $service->createPidFilePath(TestService::getServiceName());
-        file_put_contents($pidFile, (string) getmypid());
-
-        self::assertTrue($service->isProcessRunning(TestService::getServiceName()));
-    }
-
-    public function testIsProcessRunningRemovesInvalidPidFile(): void
-    {
-        $service = $this->createService();
-        $pidFile = $service->createPidFilePath(TestService::getServiceName());
-        file_put_contents($pidFile, 'not-a-pid');
-
-        self::assertFalse($service->isProcessRunning(TestService::getServiceName()));
-        self::assertFalse(is_file($pidFile));
-    }
-
-    public function testRemovePidFileDeletesExistingFile(): void
-    {
-        $service = $this->createService();
-        $pidFile = $service->createPidFilePath(TestService::getServiceName());
-        file_put_contents($pidFile, '123');
-
-        $service->removePidFile();
-
-        self::assertFalse(is_file($pidFile));
-    }
-
-    public function testPReadsValuesWithNamespacePrefix(): void
-    {
-        $service = $this->createService();
-
-        self::assertSame('expected-value', $service->p('test.value'));
-    }
-
-    private function createService(): TestService
-    {
-        return new TestService($this->parameterBag);
+        $this->removeDirectory($this->projectDir);
+        parent::tearDown();
     }
 
     /**
@@ -149,6 +146,11 @@ final class AbstractServiceTest extends TestCase
         return [new SymfonyStyle(new ArrayInput([]), $output), $output];
     }
 
+    private function createService(): TestService
+    {
+        return new TestService($this->parameterBag);
+    }
+
     private function removeDirectory(
         string $path,
     ): void {
@@ -156,9 +158,9 @@ final class AbstractServiceTest extends TestCase
             return;
         }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST,
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
         );
 
         foreach ($iterator as $item) {
@@ -176,7 +178,7 @@ final class AbstractServiceTest extends TestCase
 /**
  * @internal
  *
- * Tailored concrete service for exercising AbstractService behaviour.
+ * Tailored concrete service for exercising AbstractService behaviour
  */
 final class TestService extends AbstractService
 {
@@ -187,16 +189,19 @@ final class TestService extends AbstractService
     /** @var list<string> */
     public array $events = [];
 
-    /** @var list<string> */
-    public array $processesToKill = [];
-
     public ?bool $pidFileExistsDuringStart = null;
 
     public ?string $pidFilePath = null;
 
-    public static function getServiceName(): string
-    {
-        return 'test-service';
+    /** @var list<string> */
+    public array $processesToKill = [];
+
+    public function killConflictingSseProcesses(
+        SymfonyStyle $io,
+    ): void {
+        $this->events[] = self::EVENT_KILL_CONFLICTS;
+        $this->processesToKill = $this->processesToKill ?: [];
+        parent::killConflictingSseProcesses($io);
     }
 
     public function start(
@@ -209,12 +214,9 @@ final class TestService extends AbstractService
         return Command::SUCCESS;
     }
 
-    public function killConflictingSseProcesses(
-        SymfonyStyle $io,
-    ): void {
-        $this->events[] = self::EVENT_KILL_CONFLICTS;
-        $this->processesToKill = $this->processesToKill ?: [];
-        parent::killConflictingSseProcesses($io);
+    public static function getServiceName(): string
+    {
+        return 'test-service';
     }
 
     protected function getSseProcessesToKill(): array
@@ -226,16 +228,11 @@ final class TestService extends AbstractService
 /**
  * @internal
  *
- * Concrete service that simulates a startup failure.
+ * Concrete service that simulates a startup failure
  */
 final class FailingService extends AbstractService
 {
     public ?string $pidFilePath = null;
-
-    public static function getServiceName(): string
-    {
-        return 'failing-service';
-    }
 
     public function start(
         array $config = [],
@@ -243,5 +240,10 @@ final class FailingService extends AbstractService
         $this->pidFilePath = $this->createPidFilePath(static::getServiceName());
 
         throw new RuntimeException('start failure');
+    }
+
+    public static function getServiceName(): string
+    {
+        return 'failing-service';
     }
 }

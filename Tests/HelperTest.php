@@ -12,7 +12,10 @@
 
 namespace Valksor\Component\Sse\Tests;
 
+use FilesystemIterator;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -90,9 +93,9 @@ final class HelperTest extends TestCase
             return;
         }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST,
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
         );
 
         foreach ($iterator as $item) {
@@ -110,7 +113,7 @@ final class HelperTest extends TestCase
 /**
  * @internal
  *
- * Lightweight helper adapter exposing the trait for testing purposes.
+ * Lightweight helper adapter exposing the trait for testing purposes
  */
 final class HelperAdapter
 {
