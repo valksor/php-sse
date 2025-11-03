@@ -429,7 +429,7 @@ trait Helper
             };
         }
 
-        return $_helper->jsonDecode($json, 1);
+        return $_helper->jsonDecode($json, true);
     }
 
     /**

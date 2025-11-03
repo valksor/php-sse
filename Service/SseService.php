@@ -690,7 +690,7 @@ final class SseService extends AbstractService
             };
         }
 
-        $data = $_helper->jsonDecode($signalData, 1);
+        $data = $_helper->jsonDecode($signalData, true);
 
         if (null === $data) {
             return;
