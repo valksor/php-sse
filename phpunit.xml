@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.0/phpunit.xsd"
+    bootstrap="Tests/bootstrap.php"
+    colors="true"
+    cacheDirectory=".phpunit.cache"
+    executionOrder="depends,random"
+    beStrictAboutOutputDuringTests="true"
+    beStrictAboutCoverageMetadata="true"
+    controlGarbageCollector="true"
+>
+
+    <php>
+        <ini name="memory_limit" value="-1" />
+    </php>
+
+    <testsuites>
+        <testsuite name="Sse Component">
+            <directory>Tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory>.</directory>
+        </include>
+        <exclude>
+            <directory>.coverage</directory>
+            <directory>.github</directory>
+            <directory>.phpunit.cache</directory>
+            <directory>Resources</directory>
+            <directory>Tests</directory>
+            <directory>docs</directory>
+            <directory>var</directory>
+            <directory>vendor</directory>
+        </exclude>
+    </source>
+
+    <coverage
+        ignoreDeprecatedCodeUnits="true"
+        disableCodeCoverageIgnore="true"
+    >
+        <report>
+            <clover outputFile=".coverage/clover.xml"/>
+            <cobertura outputFile=".coverage/cobertura.xml"/>
+            <crap4j outputFile=".coverage/crap4j.xml"/>
+            <html outputDirectory=".coverage"/>
+            <text outputFile=".coverage/coverage.txt"/>
+        </report>
+    </coverage>
+
+    <logging>
+        <junit outputFile=".coverage/junit.xml"/>
+        <testdoxHtml outputFile=".coverage/testdox.html"/>
+        <testdoxText outputFile=".coverage/testdox.txt"/>
+    </logging>
+</phpunit>

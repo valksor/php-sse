@@ -33,6 +33,9 @@
         "valksor/php-bundle": "^1.0",
         "valksor/php-functions-local": "^1.0"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^12.0"
+    },
     "minimum-stability": "dev",
     "prefer-stable": false,
     "autoload": {
