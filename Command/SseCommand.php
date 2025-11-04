@@ -13,9 +13,11 @@
 namespace Valksor\Component\Sse\Command;
 
 use JsonException;
+use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Valksor\Component\Sse\Service\SseService;
 
@@ -214,7 +216,76 @@ final class SseCommand extends AbstractCommand
      * # Uses production configuration from config/packages/prod/valksor.yaml
      * ```
      */
-    protected function execute(
+    /**
+     * Execute the SSE command and start the server with proper lifecycle management.
+     *
+     * This method serves as the main entry point for the command execution. It creates
+     * a SymfonyStyle instance for enhanced console output and delegates the actual
+     * server startup to the SseService with comprehensive lifecycle management.
+     *
+     * Execution Flow:
+     * 1. Create SymfonyStyle instance for rich console interactions
+     * 2. Delegate to SseService->startWithLifecycle() for server startup
+     * 3. Return the exit code from the service execution
+     *
+     * Lifecycle Management Features:
+     * The delegated service method handles:
+     * - Process conflict detection and automatic resolution
+     * - PID file creation and cleanup
+     * - SSL/TLS certificate validation and loading
+     * - Server socket initialization and binding
+     * - Signal handler setup for graceful shutdown
+     * - Client connection acceptance and management
+     * - Event broadcasting to connected clients
+     * - Resource cleanup and process termination
+     *
+     * Console Output:
+     * The SymfonyStyle instance provides:
+     * - Colored output for better readability
+     * - Progress bars and status indicators
+     * - Success/error/warning message formatting
+     * - Interactive prompts and confirmations
+     * - Table and list formatting for structured data
+     *
+     * Error Handling:
+     * - All exceptions are caught by the service layer
+     * - Error messages are logged with appropriate severity
+     * - Exit codes properly indicate success or failure
+     * - Resources are cleaned up even on failure
+     * - Diagnostic information provided for troubleshooting
+     *
+     * Return Values:
+     * - Command::SUCCESS (0): Server started and terminated successfully
+     * - Non-zero: Server failed to start or encountered errors during execution
+     *
+     * @param InputInterface  $input  Console input interface (no additional arguments supported)
+     *                                Standard Symfony console input with command options and arguments
+     * @param OutputInterface $output Console output interface for status and logging messages
+     *                                Used for creating SymfonyStyle instance
+     *
+     * @return int Exit code indicating success (0) or failure (non-zero)
+     *             Follows standard command line exit code conventions
+     *
+     * @throws RuntimeException If process management or server startup fails
+     *
+     * @see SseService::startWithLifecycle() For the actual server implementation
+     * @see SymfonyStyle For enhanced console output functionality
+     *
+     * @example Basic command execution
+     * ```bash
+     * php bin/console valksor:sse
+     * # Output:
+     * # [INFO] Starting SSE server on localhost:3000...
+     * # [INFO] Server started successfully
+     * # [INFO] Listening for connections...
+     * ```
+     * @example Command with different environment
+     * ```bash
+     * php bin/console valksor:sse --env=prod
+     * # Uses production configuration from config/packages/prod/valksor.yaml
+     * ```
+     */
+    public function __invoke(
         InputInterface $input,
         OutputInterface $output,
     ): int {
