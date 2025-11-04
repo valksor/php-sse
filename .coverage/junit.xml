@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="" tests="48" assertions="92" errors="0" failures="0" skipped="0" time="0.000000">
+    <testsuite name="Valksor\Component\Sse\Tests\AbstractServiceTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/AbstractServiceTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.000000">
+      <testcase name="testRemovePidFileDeletesExistingFile" class="Valksor\Component\Sse\Tests\AbstractServiceTest" classname="Valksor.Component.Sse.Tests.AbstractServiceTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/AbstractServiceTest.php" line="76" assertions="1" time="0.000000"/>
+    </testsuite>
+    <testsuite name="Valksor\Component\Sse\Tests\Command\SseCommandTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Command/SseCommandTest.php" tests="1" assertions="2" errors="0" failures="0" skipped="0" time="0.000000">
+      <testcase name="testCommandHasDescription" class="Valksor\Component\Sse\Tests\Command\SseCommandTest" classname="Valksor.Component.Sse.Tests.Command.SseCommandTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Command/SseCommandTest.php" line="29" assertions="2" time="0.000000"/>
+    </testsuite>
+    <testsuite name="Valksor\Component\Sse\Tests\DependencyInjection\SseConfigurationTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/DependencyInjection/SseConfigurationTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.000000">
+      <testcase name="testAddSectionDoesNotThrowException" class="Valksor\Component\Sse\Tests\DependencyInjection\SseConfigurationTest" classname="Valksor.Component.Sse.Tests.DependencyInjection.SseConfigurationTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/DependencyInjection/SseConfigurationTest.php" line="26" assertions="1" time="0.000000"/>
+    </testsuite>
+    <testsuite name="Valksor\Component\Sse\Tests\HelperTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/HelperTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.000000">
+      <testcase name="testSetServiceIoInjectsWhenServiceSupportsIt" class="Valksor\Component\Sse\Tests\HelperTest" classname="Valksor.Component.Sse.Tests.HelperTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/HelperTest.php" line="65" assertions="1" time="0.000000"/>
+    </testsuite>
+    <testsuite name="Valksor\Component\Sse\Tests\Service\SseServiceTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Service/SseServiceTest.php" tests="3" assertions="5" errors="0" failures="0" skipped="0" time="0.000000">
+      <testcase name="testCreateServerWithTlsFallbackToHttp" class="Valksor\Component\Sse\Tests\Service\SseServiceTest" classname="Valksor.Component.Sse.Tests.Service.SseServiceTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Service/SseServiceTest.php" line="94" assertions="2" time="0.000000"/>
+      <testcase name="testCreateServerWithHttpOnly" class="Valksor\Component\Sse\Tests\Service\SseServiceTest" classname="Valksor.Component.Sse.Tests.Service.SseServiceTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Service/SseServiceTest.php" line="77" assertions="2" time="0.000000"/>
+      <testcase name="testStop" class="Valksor\Component\Sse\Tests\Service\SseServiceTest" classname="Valksor.Component.Sse.Tests.Service.SseServiceTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Service/SseServiceTest.php" line="346" assertions="1" time="0.000000"/>
+    </testsuite>
+    <testsuite name="Valksor\Component\Sse\Tests\Twig\ImportMapExtensionTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Twig/ImportMapExtensionTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.000000">
+      <testcase name="testExtensionHasNoTags" class="Valksor\Component\Sse\Tests\Twig\ImportMapExtensionTest" classname="Valksor.Component.Sse.Tests.Twig.ImportMapExtensionTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Twig/ImportMapExtensionTest.php" line="30" assertions="1" time="0.000000"/>
+    </testsuite>
+    <testsuite name="Valksor\Component\Sse\Tests\Twig\ImportMapRuntimeTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Twig/ImportMapRuntimeTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.000000">
+      <testcase name="testRenderScriptsReturnsString" class="Valksor\Component\Sse\Tests\Twig\ImportMapRuntimeTest" classname="Valksor.Component.Sse.Tests.Twig.ImportMapRuntimeTest" file="/var/www/html/valksor/src/Valksor/Component/Sse/Tests/Twig/ImportMapRuntimeTest.php" line="45" assertions="1" time="0.000000"/>
+    </testsuite>
+  </testsuite>
+</testsuites>
