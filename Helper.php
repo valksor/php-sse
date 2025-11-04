@@ -145,6 +145,8 @@ use Valksor\Functions\Iteration\Traits\_JsonDecode;
 use Valksor\Functions\Iteration\Traits\_JsonEncode;
 use Valksor\Functions\Local\Traits\_MkDir;
 
+use function method_exists;
+
 /**
  * Utility trait providing common helper methods for SSE services and commands.
  *

@@ -29,10 +29,12 @@ use Throwable;
 
 use function addslashes;
 use function array_key_exists;
+use function array_keys;
 use function class_exists;
 use function count;
 use function htmlspecialchars;
 use function in_array;
+use function is_file;
 use function json_encode;
 use function ltrim;
 use function preg_replace;
