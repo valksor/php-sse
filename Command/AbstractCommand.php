@@ -16,6 +16,9 @@ use RuntimeException;
 use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\Exception\InvalidParameterTypeException;
+use Symfony\Component\DependencyInjection\Exception\ParameterCircularReferenceException;
+use Symfony\Component\DependencyInjection\Exception\ParameterNotFoundException;
 use Valksor\Bundle\Command\AbstractCommand as BundleAbstractCommand;
 use Valksor\Bundle\ValksorBundle;
 use Valksor\Component\Sse\Helper;
@@ -321,9 +324,9 @@ abstract class AbstractCommand extends BundleAbstractCommand
      * @return mixed The parameter value with appropriate type
      *               Type depends on the parameter definition and configuration
      *
-     * @throws \Symfony\Component\DependencyInjection\Exception\ParameterNotFoundException          If parameter is not defined
-     * @throws \Symfony\Component\DependencyInjection\Exception\ParameterCircularReferenceException If parameter has circular reference
-     * @throws \Symfony\Component\DependencyInjection\Exception\InvalidParameterTypeException       If parameter type is invalid
+     * @throws ParameterNotFoundException          If parameter is not defined
+     * @throws ParameterCircularReferenceException If parameter has circular reference
+     * @throws InvalidParameterTypeException       If parameter type is invalid
      *
      * @see ParameterBagInterface For parameter access methods
      * @see ValksorBundle::VALKSOR For the prefix constant used
