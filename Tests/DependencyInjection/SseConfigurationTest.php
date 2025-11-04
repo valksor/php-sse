@@ -55,7 +55,7 @@ final class SseConfigurationTest extends TestCase
     {
         // Should not throw any exception even without extensions
         $this->configuration->registerPreConfiguration(
-            $this->createMock(ContainerConfigurator::class),
+            $this->createStub(ContainerConfigurator::class),
             $this->container,
             'sse',
         );

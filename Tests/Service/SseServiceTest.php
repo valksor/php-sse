@@ -453,7 +453,7 @@ final class SseServiceTest extends TestCase
             'kernel.project_dir' => sys_get_temp_dir(),
         ]);
 
-        $this->io = $this->createMock(SymfonyStyle::class);
+        $this->io = $this->createStub(SymfonyStyle::class);
         $this->service = new SseService($this->parameterBag);
     }
 

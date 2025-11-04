@@ -52,11 +52,11 @@ final class ImportMapRuntimeTest extends TestCase
     protected function setUp(): void
     {
         $this->runtime = new ImportMapRuntime(
-            $this->createMock(ImportMapGenerator::class),
-            $this->createMock(Packages::class),
-            $this->createMock(RequestStack::class),
-            $this->createMock(ParameterBagInterface::class),
-            $this->createMock(HttpClientInterface::class),
+            $this->createStub(ImportMapGenerator::class),
+            $this->createStub(Packages::class),
+            $this->createStub(RequestStack::class),
+            $this->createStub(ParameterBagInterface::class),
+            $this->createStub(HttpClientInterface::class),
         );
     }
 }
