@@ -1,0 +1,33 @@
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+
+jobs:
+    upload-codecov:
+        name: Upload coverage to Codecov
+        runs-on: self-arm
+
+        steps:
+            # https://github.com/marketplace/actions/checkout
+            -   name: Checkout code
+                uses: actions/checkout@v5
+                with:
+                    fetch-depth: 0
+
+            # https://github.com/marketplace/actions/codecov
+            -   name: Upload coverage to Codecov
+                uses: codecov/codecov-action@v5
+                env:
+                    CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+                with:
+                    files: .coverage/clover.xml
+                    fail_ci_if_error: true
+                    verbose: true
+
+            -   name: Upload test results to Codecov
+                uses: codecov/test-results-action@v1
+                with:
+                    token: ${{ secrets.CODECOV_TOKEN }}
+                    files: .coverage/junit.xml
