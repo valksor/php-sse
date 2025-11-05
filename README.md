@@ -1,5 +1,8 @@
 # Valksor Component: SSE
 
+[![BSD-3-Clause](https://img.shields.io/badge/BSD--3--Clause-green?style=flat)](https://github.com/valksor/php-sse/blob/master/LICENSE)
+[![Coverage Status](https://coveralls.io/repos/github/valksor/php-sse/badge.svg?branch=master)](https://coveralls.io/github/valksor/php-sse?branch=master)
+
 A Server-Sent Events (SSE) component that provides real-time, unidirectional communication from server to client, enabling live updates, programmatic reloads, and dynamic content streaming in Symfony applications.
 
 ## Features

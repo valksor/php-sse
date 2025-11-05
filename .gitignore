@@ -1,5 +1,5 @@
 .coverage/*
-!.coverage/clover.xml
+!.coverage/cobertura.xml
 !.coverage/junit.xml
 .php-cs-fixer.cache
 .phpunit.cache/
