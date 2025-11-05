@@ -490,7 +490,7 @@ valksor:
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+Contributions are welcome!
 
 - Code style requirements (PSR-12)
 - Testing requirements for PRs

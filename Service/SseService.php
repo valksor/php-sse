@@ -396,8 +396,6 @@ final class SseService extends AbstractService
      * @param array<string,mixed> $metadata Optional metadata for enhanced client handling
      *                                      Common keys: 'type', 'timestamp', 'bundle', 'hot'
      *
-     * @throws JsonException When JSON encoding of the payload fails
-     *
      * @see broadcast() For the underlying broadcasting implementation
      * @see checkReloadSignal() For file-based signal integration
      */
@@ -668,6 +666,9 @@ final class SseService extends AbstractService
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     private function checkReloadSignal(): void
     {
         $signalFile = $this->parameterBag->get('kernel.project_dir') . '/var/run/valksor-reload.signal';
