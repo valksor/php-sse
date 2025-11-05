@@ -50,7 +50,5 @@
 
     <logging>
         <junit outputFile=".coverage/junit.xml"/>
-        <testdoxHtml outputFile=".coverage/testdox.html"/>
-        <testdoxText outputFile=".coverage/testdox.txt"/>
     </logging>
 </phpunit>
