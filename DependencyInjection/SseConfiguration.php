@@ -282,6 +282,7 @@ class SseConfiguration extends AbstractDependencyConfiguration
             ->children()
                 ->arrayNode($component)
                 ->{$enableIfStandalone(sprintf('%s/%s', ValksorBundle::VALKSOR, $component), self::class)}()
+                ->addDefaultsIfNotSet()
                 ->children()
                     ->scalarNode('bind')
                         ->info('Bind address for SSE server')
