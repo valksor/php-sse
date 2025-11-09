@@ -413,6 +413,8 @@ kill -INT <pid>
 | `timeout` | int | 300 | Connection timeout in seconds |
 | `debug` | boolean | false | Enable debug mode |
 
+*See: [`SseConfiguration.php`](DependencyInjection/SseConfiguration.php) for the complete configuration schema.*
+
 ### Server Events
 
 Standard event types:
