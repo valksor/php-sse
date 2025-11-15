@@ -56,9 +56,9 @@ return [
 valksor:
     sse:
         enabled: true
-        port: 8080           # SSE server port
-        host: localhost       # SSE server host
-        ping_interval: 30     # Ping interval in seconds
+        port: 8080 # SSE server port
+        host: localhost # SSE server host
+        ping_interval: 30 # Ping interval in seconds
 ```
 
 3. Set up asset mapping:
@@ -71,6 +71,7 @@ cp src/valksor/src/Valksor/Component/Sse/Resources/importmap.php.example importm
 ```
 
 The configuration automatically detects your environment and includes SSE assets from:
+
 - Local development (`valksor/` directory)
 - FullStack package (`vendor/valksor/valksor/`)
 - Standalone SSE package (`vendor/valksor/php-sse/`)
@@ -97,6 +98,7 @@ php bin/console valksor:sse &
 ```
 
 The server will:
+
 - Start an SSE server on the configured host and port
 - Handle client connections and send real-time events
 - Provide automatic browser reload functionality
@@ -148,12 +150,14 @@ For build system integration examples, see the ValksorDev Build Tools documentat
 #### When to Use Standalone SSE vs Build System Integration
 
 **Use Build System Integration (`valksor:dev`/`valksor:watch`):**
+
 - Development environment with hot reload
 - Multiple services need to run together
 - Automatic process management required
 - File watching + SSE functionality needed
 
 **Use Standalone SSE (`valksor:sse`):**
+
 - Production SSE server deployment
 - Custom SSE-only applications
 - Integration with other build systems
@@ -171,6 +175,7 @@ cp src/valksor/src/Valksor/Component/Sse/Resources/importmap.php.example importm
 ```
 
 The configuration automatically detects your environment and includes SSE assets from:
+
 - Local development (`valksor/` directory)
 - FullStack package (`vendor/valksor/valksor/`)
 - Standalone SSE package (`vendor/valksor/php-sse/`)
@@ -187,6 +192,7 @@ The component provides SSE integration through a simple template include:
 ```
 
 The SSE template automatically handles:
+
 - Server connection detection via `valksor_sse_ping()`
 - Meta tag injection for SSE configuration (`valksor-sse-port`, `valksor-sse-path`)
 - JavaScript client loading via `valksor_sse_importmap_scripts(['valksorsse/sse'])`
@@ -403,17 +409,17 @@ kill -INT <pid>
 
 ### Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | boolean | false | Enable/disable the SSE component |
-| `host` | string | localhost | SSE server host |
-| `port` | int | 8080 | SSE server port |
-| `ping_interval` | int | 30 | Ping interval in seconds |
-| `max_connections` | int | 100 | Maximum concurrent connections |
-| `timeout` | int | 300 | Connection timeout in seconds |
-| `debug` | boolean | false | Enable debug mode |
+| Option            | Type    | Default   | Description                      |
+| ----------------- | ------- | --------- | -------------------------------- |
+| `enabled`         | boolean | false     | Enable/disable the SSE component |
+| `host`            | string  | localhost | SSE server host                  |
+| `port`            | int     | 8080      | SSE server port                  |
+| `ping_interval`   | int     | 30        | Ping interval in seconds         |
+| `max_connections` | int     | 100       | Maximum concurrent connections   |
+| `timeout`         | int     | 300       | Connection timeout in seconds    |
+| `debug`           | boolean | false     | Enable debug mode                |
 
-*See: [`SseConfiguration.php`](DependencyInjection/SseConfiguration.php) for the complete configuration schema.*
+_See: [`SseConfiguration.php`](DependencyInjection/SseConfiguration.php) for the complete configuration schema._
 
 ### Server Events
 
@@ -460,23 +466,24 @@ sudo systemctl enable valksor-sse
 ### Common Issues
 
 1. **Port Already in Use**
-   ```bash
-   # Check if port is in use
-   lsof -i :8080
 
-   # Kill existing process
-   php bin/console valksor:sse --kill-existing
-   ```
+    ```bash
+    # Check if port is in use
+    lsof -i :8080
+
+    # Kill existing process
+    php bin/console valksor:sse --kill-existing
+    ```
 
 2. **Connection Refused**
-   - Check firewall settings
-   - Verify host and port configuration
-   - Ensure SSE server is running
+    - Check firewall settings
+    - Verify host and port configuration
+    - Ensure SSE server is running
 
 3. **Browser Not Reloading**
-   - Check browser console for errors
-   - Verify Twig functions are properly included
-   - Ensure JavaScript is loading correctly
+    - Check browser console for errors
+    - Verify Twig functions are properly included
+    - Ensure JavaScript is loading correctly
 
 ### Debug Mode
 
@@ -488,7 +495,6 @@ valksor:
     sse:
         debug: true
 ```
-
 
 ## Contributing
 
@@ -528,6 +534,7 @@ This package is licensed under the [BSD-3-Clause License](LICENSE).
 This package is part of the [valksor/php-valksor](https://github.com/valksor/php-valksor) project - a comprehensive PHP library and Symfony bundle that provides a collection of utilities, components, and integrations for Symfony applications.
 
 The main project includes:
+
 - Various utility functions and components
 - Doctrine ORM tools and extensions
 - API Platform integrations
